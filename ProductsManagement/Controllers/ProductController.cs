@@ -29,21 +29,11 @@ namespace ProductsManagement.Controllers
         [HttpGet]
         public async Task<ActionResult<List<ProductDTO>>> GetAll()
         {
-            var products = await _dbContext.Products.ToListAsync();
-            foreach(var product in products)
-            {
-                var category = await _dbContext.Categories.FindAsync(product.CategoryId);
-                product.Category = category;
-                var attributeValues = await _dbContext.AttributeValues
-               .Where(av => av.ProductId == product.Id)
-               .ToListAsync();
-                product.AttributeValues = attributeValues;
-                foreach (var value in product.AttributeValues)
-                {
-                    var attribute = await _dbContext.Attributes.FindAsync(value.AttributeId);
-                    value.Attribute = attribute;
-                }
-            }
+            var products = await _dbContext.Products.
+                Include(p=>p.Category).
+                Include(p=>p.AttributeValues).
+                ThenInclude(av=>av.Attribute).
+                ToListAsync();
             return Ok(_mapper.Map<List<ProductDTO>>(products));
         }
 
@@ -86,19 +76,10 @@ namespace ProductsManagement.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<ProductDTO>> GetProduct(Guid id)
         {
-            var product = await _dbContext.Products.FindAsync(id);
-            var category = await _dbContext.Categories.FindAsync(product.CategoryId);
-            var attributeValues = await _dbContext.AttributeValues
-                .Where(av => av.ProductId == product.Id)
-                .ToListAsync();
-
-            product.Category = category;
-            product.AttributeValues = attributeValues;
-            foreach(var value in product.AttributeValues)
-            {
-                var attribute = await _dbContext.Attributes.FindAsync(value.AttributeId);
-                value.Attribute = attribute;
-            }
+            var product = await _dbContext.Products.Include(p=>p.Category).
+                Include(p=>p.AttributeValues).
+                ThenInclude(av=>av.Attribute).
+                FirstOrDefaultAsync(p=>p.Id == id);
             if (product == null)
             {
                 return NotFound();
