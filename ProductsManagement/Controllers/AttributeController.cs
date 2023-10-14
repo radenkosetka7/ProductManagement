@@ -36,10 +36,6 @@ namespace ProductsManagement.Controllers
         [HttpPost]
         public async Task<ActionResult<AttributeDTO>> AddAttribute(AttributeRequest attributeRequest)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
 
             if (!Enum.IsDefined(typeof(AttributeType), attributeRequest.Type))
             {

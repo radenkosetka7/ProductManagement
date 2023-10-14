@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -40,10 +41,6 @@ namespace ProductsManagement.Controllers
         [HttpPost]
         public async Task<ActionResult<ProductDTO>> AddProduct(ProductRequest productRequest)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
 
             if (!Enum.IsDefined(typeof(Unit), productRequest.Unit))
             {
@@ -85,6 +82,53 @@ namespace ProductsManagement.Controllers
                 return NotFound();
             }
             return Ok(_mapper.Map<ProductDTO>(product));
+        }
+
+        [HttpPut("{id}")]
+        public async Task<ActionResult<ProductDTO>> UpdateProduct(Guid id,ProductRequest productRequest)
+        {
+            var product = await _dbContext.Products.FirstOrDefaultAsync(p => p.Id == id);
+            if (product == null)
+            {
+                return NotFound("Product not found");
+            }
+            Guid idUser = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "id").Value);
+            if (product.UserId != idUser)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden);
+            }
+            if (!Enum.IsDefined(typeof(Unit), productRequest.Unit))
+            {
+                ModelState.AddModelError("Type", "Invalid Unit");
+                return BadRequest(ModelState);
+            }
+            product = _mapper.Map<Product>(productRequest);
+
+            foreach (var attributeValue in product.AttributeValues)
+            {
+                attributeValue.ProductId = product.Id;
+            }
+            await _dbContext.SaveChangesAsync();
+            var productDTO = _mapper.Map<ProductDTO>(product);
+            return CreatedAtAction(nameof(GetProduct), new { id = productDTO.Id }, productDTO);
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteProduct(Guid id)
+        {
+            var product= await _dbContext.Products.FirstOrDefaultAsync(p=>p.Id == id);
+            if(product == null)
+            {
+                return NotFound("Product not found");
+            }
+            Guid idUser = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "id").Value);
+            if(product.UserId != idUser)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden);
+            }
+            _dbContext.Products.Remove(product);
+            await _dbContext.SaveChangesAsync();
+            return NoContent();
         }
     }
 }

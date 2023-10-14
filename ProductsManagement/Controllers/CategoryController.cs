@@ -35,10 +35,7 @@ namespace ProductsManagement.Controllers
         [HttpPost]
         public async Task<ActionResult<CategoryDTO>> AddCategory(CategoryRequest categoryRequest)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
+
             var category = _mapper.Map<Category>(categoryRequest);
             await _dbContext.Categories.AddAsync(category);
             await _dbContext.SaveChangesAsync();

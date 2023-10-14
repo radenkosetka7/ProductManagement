@@ -33,10 +33,6 @@ namespace ProductsManagement.Controllers
         [HttpPost("register")]
         public async Task<ActionResult<User>> Register(RegisterRequest registerRequest)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
             var userTemp = _dbContext.Users.FirstOrDefault(x => x.Email == registerRequest.Email);
             if (userTemp != null) 
             {
@@ -57,10 +53,6 @@ namespace ProductsManagement.Controllers
         [HttpPost("login")]
         public async Task<ActionResult<string>> Login(LoginRequest loginRequest)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
             var user = _dbContext.Users.FirstOrDefault(x => x.Email == loginRequest.Email);
             if (user == null)
             {
