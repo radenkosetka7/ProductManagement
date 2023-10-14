@@ -21,7 +21,7 @@ namespace ProductsManagement.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<AttributeValue>()
-                .HasKey(av => new { av.ProductsId, av.AttributesId });
+                .HasKey(av => new { av.ProductId, av.AttributeId });
         }
     }
     }

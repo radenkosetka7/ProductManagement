@@ -2,8 +2,8 @@
 {
     public class AttributeValue
     {
-        public Guid ProductsId { get; set; }
-        public Guid AttributesId { get; set; }
+        public Guid ProductId { get; set; }
+        public Guid AttributeId { get; set; }
 
         public string Value { get; set; }
         public Product Product { get; set; }

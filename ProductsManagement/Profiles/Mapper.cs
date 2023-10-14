@@ -16,6 +16,10 @@ namespace ProductsManagement.Profiles
             CreateMap<Models.Entities.Attribute, AttributeDTO>();
             CreateMap<RegisterRequest, User>().ForMember(dest => dest.Password, opt => opt.Ignore());
             CreateMap<User, UserDTO>();
+            CreateMap<ProductRequest, Product>();
+            CreateMap<AttributeValueRequest, AttributeValue>();
+            CreateMap<Product, ProductDTO>();
+            CreateMap<AttributeValue, AttributeValueDTO>();
         }
     }
 }

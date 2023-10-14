@@ -40,7 +40,7 @@ namespace ProductsManagement.Controllers
             var userTemp = _dbContext.Users.FirstOrDefault(x => x.Email == registerRequest.Email);
             if (userTemp != null) 
             {
-                return BadRequest("User with given e-mail already exists!");
+                return Conflict("User with given e-mail already exists!");
             }
 
             var user = _mapper.Map<User>(registerRequest);
