@@ -7,6 +7,7 @@ using ProductsManagement.Data;
 using ProductsManagement.Models.DTOs;
 using ProductsManagement.Models.Enums;
 using ProductsManagement.Models.Requests;
+using ProductsManagement.Services;
 
 namespace ProductsManagement.Controllers
 {
@@ -15,39 +16,29 @@ namespace ProductsManagement.Controllers
     [ApiController]
     public class AttributeController : ControllerBase
     {
-        private readonly IMapper _mapper;
-        private readonly ProductManagementDbContext _dbContext;
+        private readonly IAttributeService _service;
 
-        public AttributeController(ProductManagementDbContext dbContext, IMapper mapper)
+        public AttributeController(IAttributeService service)
         {
-            _dbContext = dbContext;
-            _mapper = mapper;
+            _service = service;
         }
 
         [HttpGet]
         public async Task<ActionResult<List<AttributeDTO>>> GetAll()
         {
-            var attributes = await _dbContext.Attributes.ToListAsync();
-
-            return Ok(_mapper.Map<List<AttributeDTO>>(attributes));
-
+            return Ok(await _service.GetAll());
         }
 
         [HttpPost]
         public async Task<ActionResult<AttributeDTO>> AddAttribute(AttributeRequest attributeRequest)
         {
 
-            if (!Enum.IsDefined(typeof(AttributeType), attributeRequest.Type))
+            var attributeDTO = await _service.AddAttribute(attributeRequest);
+            if (attributeDTO == null)
             {
                 ModelState.AddModelError("Type", "Invalid AttributeType");
                 return BadRequest(ModelState);
             }
-
-
-            var attribute = _mapper.Map<Models.Entities.Attribute>(attributeRequest);
-            await _dbContext.Attributes.AddAsync(attribute);
-            await _dbContext.SaveChangesAsync();
-            var attributeDTO = _mapper.Map<AttributeDTO>(attribute);
             return CreatedAtAction(nameof(GetAttribute), new { id = attributeDTO.Id }, attributeDTO);
 
         }
@@ -55,13 +46,7 @@ namespace ProductsManagement.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<AttributeDTO>> GetAttribute(Guid id)
         {
-            var attribute = await _dbContext.Attributes.FindAsync(id);
-            if (attribute == null)
-            {
-                return NotFound();
-            }
-            return Ok(_mapper.Map<AttributeDTO>(attribute));
-
+            return (await _service.GetAttribute(id)) is var attribute ? Ok(attribute) : NotFound();
         }
     }
 }

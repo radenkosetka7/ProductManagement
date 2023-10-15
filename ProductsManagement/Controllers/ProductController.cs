@@ -9,6 +9,8 @@ using ProductsManagement.Models.DTOs;
 using ProductsManagement.Models.Entities;
 using ProductsManagement.Models.Enums;
 using ProductsManagement.Models.Requests;
+using ProductsManagement.Services;
+using System.ComponentModel.DataAnnotations;
 
 namespace ProductsManagement.Controllers
 {
@@ -18,117 +20,86 @@ namespace ProductsManagement.Controllers
     public class ProductController : ControllerBase
     {
 
-        private readonly IMapper _mapper;
-        private readonly ProductManagementDbContext _dbContext;
+        private readonly IProductService _service;
 
-        public ProductController(IMapper mapper, ProductManagementDbContext dbContext)
+        public ProductController(IProductService service)
         {
-            _mapper = mapper;
-            _dbContext = dbContext;
+            _service = service;
         }
 
         [HttpGet]
         public async Task<ActionResult<List<ProductDTO>>> GetAll()
         {
-            var products = await _dbContext.Products.
-                Include(p=>p.Category).
-                Include(p=>p.AttributeValues).
-                ThenInclude(av=>av.Attribute).
-                ToListAsync();
-            return Ok(_mapper.Map<List<ProductDTO>>(products));
+            return Ok(await _service.GetAll());
         }
 
         [HttpPost]
         public async Task<ActionResult<ProductDTO>> AddProduct(ProductRequest productRequest)
         {
-
-            if (!Enum.IsDefined(typeof(Unit), productRequest.Unit))
+            var productDTO = await _service.AddProduct(productRequest,User);
+            if (productDTO == null)
             {
                 ModelState.AddModelError("Type", "Invalid Unit");
                 return BadRequest(ModelState);
             }
-            var product= _mapper.Map<Product>(productRequest);
-            string userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "id").Value;
-            
-            if(Guid.TryParse(userIdClaim, out Guid userId))
-            {
-                product.UserId = userId;
-            }
-            else
-            {
-                return BadRequest();
-            }
-            await _dbContext.Products.AddAsync(product);
-
-            foreach(var attributeValue in product.AttributeValues)
-            {
-                attributeValue.ProductId = product.Id;
-                await _dbContext.AttributeValues.AddAsync(attributeValue);
-            }
-            await _dbContext.SaveChangesAsync();
-            var productDTO = _mapper.Map<ProductDTO>(product);
             return CreatedAtAction(nameof(GetProduct), new { id = productDTO.Id }, productDTO);
         }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<ProductDTO>> GetProduct(Guid id)
         {
-            var product = await _dbContext.Products.Include(p=>p.Category).
-                Include(p=>p.AttributeValues).
-                ThenInclude(av=>av.Attribute).
-                FirstOrDefaultAsync(p=>p.Id == id);
-            if (product == null)
-            {
-                return NotFound();
-            }
-            return Ok(_mapper.Map<ProductDTO>(product));
+            return (await _service.GetProduct(id)) is var product ? Ok(product) : NotFound();
         }
 
         [HttpPut("{id}")]
-        public async Task<ActionResult<ProductDTO>> UpdateProduct(Guid id,ProductRequest productRequest)
+        public async Task<ActionResult<ProductDTO>> UpdateProduct(Guid id, ProductRequest productRequest)
         {
-            var product = await _dbContext.Products.FirstOrDefaultAsync(p => p.Id == id);
-            if (product == null)
+            try
             {
-                return NotFound("Product not found");
+                var productDTO = await _service.UpdateProduct(id,productRequest, User);
+                return CreatedAtAction(nameof(GetProduct), new { id = productDTO.Id }, productDTO);
+            
             }
-            Guid idUser = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "id").Value);
-            if (product.UserId != idUser)
+            catch (ValidationException ex)
             {
-                return StatusCode(StatusCodes.Status403Forbidden);
+                if(ex.Message == "Product not found")
+                {
+                    return NotFound();
+                }
+                else if(ex.Message == "Forbidden")
+                {
+                    return Unauthorized("Action forbidden"); //should be Forbidden 403
+                }
+                else
+                {
+                    return BadRequest();
+                }
             }
-            if (!Enum.IsDefined(typeof(Unit), productRequest.Unit))
-            {
-                ModelState.AddModelError("Type", "Invalid Unit");
-                return BadRequest(ModelState);
-            }
-            product = _mapper.Map<Product>(productRequest);
-
-            foreach (var attributeValue in product.AttributeValues)
-            {
-                attributeValue.ProductId = product.Id;
-            }
-            await _dbContext.SaveChangesAsync();
-            var productDTO = _mapper.Map<ProductDTO>(product);
-            return CreatedAtAction(nameof(GetProduct), new { id = productDTO.Id }, productDTO);
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProduct(Guid id)
         {
-            var product= await _dbContext.Products.FirstOrDefaultAsync(p=>p.Id == id);
-            if(product == null)
+            try
             {
-                return NotFound("Product not found");
+                var productDTO = await _service.DeleteProduct(id,User);
+                return NoContent();
             }
-            Guid idUser = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "id").Value);
-            if(product.UserId != idUser)
+            catch (ValidationException ex)
             {
-                return StatusCode(StatusCodes.Status403Forbidden);
+                if (ex.Message == "Product not found")
+                {
+                    return NotFound();
+                }
+                else if (ex.Message == "Forbidden")
+                {
+                    return Unauthorized("Action forbidden"); //should be Forbidden 403
+                }
+                else
+                {
+                    return BadRequest();
+                }
             }
-            _dbContext.Products.Remove(product);
-            await _dbContext.SaveChangesAsync();
-            return NoContent();
         }
     }
 }

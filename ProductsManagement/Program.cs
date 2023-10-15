@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using ProductsManagement.Data;
+using ProductsManagement.Services;
 using Swashbuckle.AspNetCore.Filters;
 using System.Text;
 
@@ -44,6 +45,12 @@ namespace ProductsManagement
                         ValidateAudience = false
                     };
                 });
+
+            builder.Services.AddScoped<IAttributeService, AttributeService>();
+            builder.Services.AddScoped<IAuthService, AuthService>();
+            builder.Services.AddScoped<ICategoryService, CategoryService>();
+            builder.Services.AddScoped<IProductService, ProductService>();
+
 
             var app = builder.Build();
 

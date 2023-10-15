@@ -7,6 +7,7 @@ using ProductsManagement.Data;
 using ProductsManagement.Models.DTOs;
 using ProductsManagement.Models.Entities;
 using ProductsManagement.Models.Requests;
+using ProductsManagement.Services;
 
 namespace ProductsManagement.Controllers
 {
@@ -15,43 +16,31 @@ namespace ProductsManagement.Controllers
     [ApiController]
     public class CategoryController : ControllerBase
     {
-        private readonly IMapper _mapper;
-        private readonly ProductManagementDbContext _dbContext;
+        private readonly ICategoryService _service;
 
-        public CategoryController(ProductManagementDbContext dbContext, IMapper mapper)
+        public CategoryController(ICategoryService service)
         {
-            _mapper = mapper;
-            _dbContext = dbContext;
+            _service = service;
         }
 
         [HttpGet]
         public async Task<ActionResult<List<CategoryDTO>>> GetAll()
         {
-            var categories = await _dbContext.Categories.ToListAsync();
-
-            return Ok(_mapper.Map<List<CategoryDTO>>(categories));
+            return Ok(await _service.GetAll());
         }
 
         [HttpPost]
         public async Task<ActionResult<CategoryDTO>> AddCategory(CategoryRequest categoryRequest)
         {
 
-            var category = _mapper.Map<Category>(categoryRequest);
-            await _dbContext.Categories.AddAsync(category);
-            await _dbContext.SaveChangesAsync();
-            var categoryDTO = _mapper.Map<CategoryDTO>(category);
+            var categoryDTO = await _service.AddCategory(categoryRequest);
             return CreatedAtAction(nameof(GetCategory), new { id = categoryDTO.Id }, categoryDTO);
         }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<CategoryDTO>> GetCategory(Guid id)
         {
-            var category = await _dbContext.Categories.FindAsync(id);
-            if (category == null)
-            {
-                return NotFound();
-            }
-            return Ok(_mapper.Map<CategoryDTO>(category));
+            return (await _service.GetCategory(id)) is var category ? Ok(category) : NotFound();
         }
     }
 }
