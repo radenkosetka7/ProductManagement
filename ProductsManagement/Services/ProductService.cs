@@ -45,7 +45,7 @@ namespace ProductsManagement.Services
                 await _dbContext.AttributeValues.AddAsync(attributeValue);
             }
             await _dbContext.SaveChangesAsync();
-            return _mapper.Map<ProductDTO>(product);
+            return await GetProduct(product.Id);
         }
 
         public async Task<ActionResult> DeleteProduct(Guid id, ClaimsPrincipal principal)
@@ -53,11 +53,11 @@ namespace ProductsManagement.Services
             var product = await _dbContext.Products.FirstOrDefaultAsync(p => p.Id == id);
             if(product == null)
             {
-                throw new ValidationException("Product not found");
+                throw new ValidationException("Product not found",404);
             }
             if (product.UserId != Guid.Parse(principal.FindFirst("id")?.Value))
             {
-                throw new ValidationException("Forbidden");
+                throw new ValidationException("Forbidden",403);
             }
             _dbContext.Products.Remove(product);
             await _dbContext.SaveChangesAsync();
@@ -87,23 +87,25 @@ namespace ProductsManagement.Services
             var product = await _dbContext.Products.FirstOrDefaultAsync(p => p.Id == id);
             if (product == null)
             {
-                throw new ValidationException("Product not found");
+                throw new ValidationException("Product not found",404);
             }
             if(product.UserId != Guid.Parse(principal.FindFirst("id")?.Value))
             {
-                throw new ValidationException("Forbidden");
+                throw new ValidationException("Forbidden",403);
             }
             if (!Enum.IsDefined(typeof(Unit), productRequest.Unit))
             {
-                throw new ValidationException("Invalid unit");
+                throw new ValidationException("Invalid unit",400);
             }
-            product = _mapper.Map<Product>(productRequest);
+            _mapper.Map(productRequest, product);
             foreach (var attributeValue in product.AttributeValues)
             {
                 attributeValue.ProductId = product.Id;
+                _dbContext.Update(attributeValue);
             }
+            _dbContext.Update(product);
             await _dbContext.SaveChangesAsync();
-            return _mapper.Map<ProductDTO>(product);
+            return await GetProduct(product.Id);
 
 
         }

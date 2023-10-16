@@ -2,8 +2,12 @@
 {
     public class ValidationException : Exception
     {
+        public int StatusCode { get; }
         public ValidationException() : base() { }
 
-        public ValidationException(string message) : base(message) { }
+        public ValidationException(string message,int statusCode) : base(message) 
+        {
+            StatusCode = statusCode;
+        }
     }
 }

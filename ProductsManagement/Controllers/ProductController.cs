@@ -5,12 +5,12 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ProductsManagement.Data;
+using ProductsManagement.Exceptions;
 using ProductsManagement.Models.DTOs;
 using ProductsManagement.Models.Entities;
 using ProductsManagement.Models.Enums;
 using ProductsManagement.Models.Requests;
 using ProductsManagement.Services;
-using System.ComponentModel.DataAnnotations;
 
 namespace ProductsManagement.Controllers
 {
@@ -60,19 +60,23 @@ namespace ProductsManagement.Controllers
                 return CreatedAtAction(nameof(GetProduct), new { id = productDTO.Id }, productDTO);
             
             }
-            catch (ValidationException ex)
+            catch (Exceptions.ValidationException ex)
             {
-                if(ex.Message == "Product not found")
+                if (ex.StatusCode == 404)
                 {
                     return NotFound();
                 }
-                else if(ex.Message == "Forbidden")
+                else if (ex.StatusCode == 403)
                 {
-                    return Unauthorized("Action forbidden"); //should be Forbidden 403
+                    return StatusCode(403, "Action forbidden");
+                }
+                else if (ex.StatusCode == 400)
+                {
+                    return BadRequest();
                 }
                 else
                 {
-                    return BadRequest();
+                    return StatusCode(500, ex.Message);
                 }
             }
         }
@@ -85,19 +89,23 @@ namespace ProductsManagement.Controllers
                 var productDTO = await _service.DeleteProduct(id,User);
                 return NoContent();
             }
-            catch (ValidationException ex)
+            catch (Exceptions.ValidationException ex)
             {
-                if (ex.Message == "Product not found")
+                if (ex.StatusCode == 404)
                 {
                     return NotFound();
                 }
-                else if (ex.Message == "Forbidden")
+                else if (ex.StatusCode == 403)
                 {
-                    return Unauthorized("Action forbidden"); //should be Forbidden 403
+                    return StatusCode(403, "Action forbidden");
+                }
+                else if (ex.StatusCode == 400)
+                {
+                    return BadRequest();
                 }
                 else
                 {
-                    return BadRequest();
+                    return StatusCode(500, ex.Message);
                 }
             }
         }
