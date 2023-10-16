@@ -13,7 +13,7 @@ namespace ProductsManagement.Models.Requests
         public Unit Unit { get; set; }
         [Required(ErrorMessage = "Category is required!")]
         public Guid CategoryId { get; set; }
-        [Required(ErrorMessage = "Attributes is required!")]
+        [Required(ErrorMessage = "Attributes are required!")]
         public ICollection<AttributeValueRequest> AttributeValues { get; set; }
     }
 }

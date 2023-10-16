@@ -18,6 +18,7 @@ namespace ProductsManagement.Services
         Task<ProductDTO> GetProduct(Guid id);
         Task<ProductDTO> UpdateProduct(Guid id, ProductRequest productRequest, ClaimsPrincipal principal);
         Task<ActionResult> DeleteProduct(Guid id, ClaimsPrincipal principal);
+        Task<List<ProductDTO>> FilterProducts(FilterRequest filterRequest);
     }
     public class ProductService : IProductService
     {
@@ -108,6 +109,48 @@ namespace ProductsManagement.Services
             return await GetProduct(product.Id);
 
 
+        }
+
+        public async Task<List<ProductDTO>> FilterProducts(FilterRequest filterRequest)
+        {
+            var query = _dbContext.Products.Include(p => p.Category).
+               Include(p => p.AttributeValues).
+               ThenInclude(av => av.Attribute).AsQueryable();
+
+            if (!string.IsNullOrEmpty(filterRequest.Name))
+            {
+                query = query.Where(p => p.Name.Contains(filterRequest.Name));
+            }
+
+            if (!string.IsNullOrEmpty(filterRequest.Code))
+            {
+                query = query.Where(p => p.Code.Contains(filterRequest.Code));
+            }
+            if (!string.IsNullOrEmpty(filterRequest.CategoryName))
+            {
+                query = query.Where(p => p.Category.Name == filterRequest.CategoryName);
+            }
+
+            if (!string.IsNullOrEmpty(filterRequest.Unit))
+            {
+                if (Enum.TryParse(filterRequest.Unit, out Unit filterUnit))
+                {
+                    query = query.Where(p => p.Unit == filterUnit);
+                }
+            }
+
+
+            if (filterRequest.AttributeValues != null && filterRequest.AttributeValues.Any())
+            {
+                foreach (var attributeValueDto in filterRequest.AttributeValues)
+                {
+                        query = query.Where(p =>
+                            p.AttributeValues.Any(av =>
+                                av.AttributeId == attributeValueDto.Attribute.Id && av.Value == attributeValueDto.Value));
+                }
+            }
+            var products = await query.ToListAsync();
+            return _mapper.Map<List<ProductDTO>>(products);
         }
     }
 }

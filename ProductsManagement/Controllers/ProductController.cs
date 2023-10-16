@@ -57,8 +57,9 @@ namespace ProductsManagement.Controllers
             try
             {
                 var productDTO = await _service.UpdateProduct(id,productRequest, User);
-                return CreatedAtAction(nameof(GetProduct), new { id = productDTO.Id }, productDTO);
-            
+                return await GetProduct(productDTO.Id);
+
+
             }
             catch (Exceptions.ValidationException ex)
             {
@@ -108,6 +109,12 @@ namespace ProductsManagement.Controllers
                     return StatusCode(500, ex.Message);
                 }
             }
+        }
+
+        [HttpPost("filter")]
+        public async Task<ActionResult<List<ProductDTO>>> FilterProducts(FilterRequest filterRequest)
+        {
+            return Ok(await _service.FilterProducts(filterRequest));
         }
     }
 }
