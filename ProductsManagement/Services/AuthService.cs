@@ -46,11 +46,7 @@ namespace ProductsManagement.Services
 
         public async Task<UserDTO> Register(RegisterRequest registerRequest)
         {
-            var userTemp = _dbContext.Users.FirstOrDefault(x => x.Email == registerRequest.Email);
-            if(userTemp != null)
-            {
-                return null;
-            }
+
             var user = _mapper.Map<User>(registerRequest);
             CreatePasswordHash(registerRequest.Password, out byte[] passwordHash, out byte[] passwordSalt);
             user.Password = passwordHash;

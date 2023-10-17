@@ -20,6 +20,14 @@ namespace ProductsManagement.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<Product>()
+                .HasIndex(p => p.Code)
+                .IsUnique();
+
+            modelBuilder.Entity<User>()
+                .HasIndex(p => p.Email)
+                .IsUnique();
+
             modelBuilder.Entity<AttributeValue>()
                 .HasKey(av => new { av.ProductId, av.AttributeId });
         }

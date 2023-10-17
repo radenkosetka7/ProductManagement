@@ -36,13 +36,20 @@ namespace ProductsManagement.Controllers
         [HttpPost]
         public async Task<ActionResult<ProductDTO>> AddProduct(ProductRequest productRequest)
         {
-            var productDTO = await _service.AddProduct(productRequest,User);
-            if (productDTO == null)
+            try
             {
-                ModelState.AddModelError("Type", "Invalid Unit");
-                return BadRequest(ModelState);
+                var productDTO = await _service.AddProduct(productRequest, User);
+                if (productDTO == null)
+                {
+                    ModelState.AddModelError("Type", "Invalid Unit");
+                    return BadRequest(ModelState);
+                }
+                return CreatedAtAction(nameof(GetProduct), new { id = productDTO.Id }, productDTO);
             }
-            return CreatedAtAction(nameof(GetProduct), new { id = productDTO.Id }, productDTO);
+            catch(DbUpdateException ex)
+            {
+                return Conflict("Product with given code already exists!");
+            }
         }
 
         [HttpGet("{id}")]
@@ -58,8 +65,6 @@ namespace ProductsManagement.Controllers
             {
                 var productDTO = await _service.UpdateProduct(id,productRequest, User);
                 return await GetProduct(productDTO.Id);
-
-
             }
             catch (Exceptions.ValidationException ex)
             {
@@ -79,6 +84,10 @@ namespace ProductsManagement.Controllers
                 {
                     return StatusCode(500, ex.Message);
                 }
+            }
+            catch (DbUpdateException ex)
+            {
+                return Conflict("Product with given code already exists!");
             }
         }
 

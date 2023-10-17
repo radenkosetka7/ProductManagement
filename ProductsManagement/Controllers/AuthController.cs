@@ -1,6 +1,8 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using ProductsManagement.Data;
 using ProductsManagement.Models.DTOs;
@@ -30,12 +32,15 @@ namespace ProductsManagement.Controllers
         [HttpPost("register")]
         public async Task<ActionResult<User>> Register(RegisterRequest registerRequest)
         {
-            var userDTO = await _service.Register(registerRequest);
-            if (userDTO == null) 
+            try
+            {
+                var userDTO = await _service.Register(registerRequest);
+                return CreatedAtAction(nameof(GetUser), new { id = userDTO.Id }, userDTO);
+            }
+            catch (DbUpdateException ex)
             {
                 return Conflict("User with given e-mail already exists!");
             }
-            return CreatedAtAction(nameof(GetUser), new { id = userDTO.Id }, userDTO);
         }
 
         [HttpPost("login")]
